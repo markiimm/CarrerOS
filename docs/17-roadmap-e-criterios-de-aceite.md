@@ -1,22 +1,22 @@
-# 17 — Roadmap e critérios de aceite
+# 17 — Roadmap de implementação e critérios de aceite
 
-> Critério de aceite é **binário**: passa ou não passa. Nada de "está razoável".
-> Fase não fechada não libera a seguinte — exceto onde indicado como paralelizável.
-> Estimativas em dias de trabalho focado de **uma** pessoa (ou de uma IA implementadora
-> trabalhando por sessões); servem para ordenar, não para prometer data.
+> Cada fase tem escopo fechado, entregáveis verificáveis e **critérios binários**: passa ou não
+> passa. Fase não fechada não libera a seguinte — a ordem existe porque cada fase é insumo da
+> próxima.
+> Estimativas em "sessões de trabalho" (≈ 3 h de implementação focada), não em dias de calendário.
 
-## Resumo
+## Visão geral
 
-| Fase | Entrega | Estimativa | Depende de |
+| Fase | Nome | Entrega central | Esforço |
 |---|---|---|---|
-| 1 | Fundação: estrutura, auth, banco, dashboard, perfis | 6–9 d | — |
-| 2 | Radar: coleta, filtros, recrutadores, score, Kanban | 10–14 d | 1 |
-| 3 | LinkedIn: auditoria, pontuação, recomendações, otimizador | 7–10 d | 1 (2 é desejável) |
-| 4 | Inteligência: IA, currículos, CRM, comparador, evolução | 10–14 d | 2 e 3 |
-| 5 | Finalização: biblioteca, notificações, testes, segurança | 6–9 d | 4 |
+| 1 | Fundação | autenticação, banco completo, perfil profissional, dashboard com estados vazios | 8–11 sessões |
+| 2 | Radar | coleta multi-fonte, dedupe, score, recrutadores, Kanban | 14–18 sessões |
+| 3 | LinkedIn | auditoria, pontuação, recomendações, otimizador, evolução | 9–12 sessões |
+| 4 | Inteligência | IA aplicada, CRM, mercado, propostas, evolução profissional | 14–18 sessões |
+| 5 | Finalização | biblioteca, notificações, modo discreto, testes, segurança, desempenho | 9–12 sessões |
 
-Total: **39–56 dias**. Fase 3 pode correr em paralelo com a 2 por não compartilhar código de
-domínio (apenas o banco e o layout).
+Regra de ouro: **nenhuma fase entrega tela sem dado real atrás.** Se o dado não existe ainda, a
+tela mostra estado vazio honesto, com a ação que gera o dado.
 
 ---
 
@@ -24,34 +24,33 @@ domínio (apenas o banco e o layout).
 
 ### Escopo
 
-1. Projeto Next.js 15 + TypeScript `strict` + Tailwind v4 + shadcn/ui; ESLint com regra de
-   camadas (`import/no-restricted-paths`).
-2. Projeto Supabase; migrations 0001–0012 aplicadas; `database.types.ts` gerado e versionado.
-3. Auth: cadastro, login, magic link, confirmação, recuperação, logout; `middleware.ts`.
-4. Layout do app: sidebar, topbar, tema escuro padrão, i18n pt-BR, os 5 estados base.
-5. Perfil profissional (CRUD completo com experiências, formação, certificações, projetos).
-6. Perfis de busca (CRUD, limite de ativos, validação da janela de recência).
-7. Dashboard com contadores reais via `v_dashboard_counters` (zerados é resultado válido).
-8. Configurações: tema, fuso, modo discreto, limites.
-9. CI: lint, typecheck, teste unitário, `supabase db diff` verificando migration pendente.
+1. Projeto Next.js 15 + TypeScript strict + Tailwind + shadcn/ui, com tokens do documento 15.
+2. Supabase local e remoto; **todas** as migrations 0001–0019 aplicadas (o banco nasce completo —
+   criar schema por fase geraria retrabalho e migrations de correção).
+3. Autenticação: cadastro, confirmação, login, magic link, recuperação, middleware, `/bloqueio`.
+4. Trigger de criação de usuário; `profiles`, `user_settings`, `user_limits`.
+5. Perfil profissional: múltiplos perfis, experiências, formação, certificações, competências,
+   links, emprego atual (sensível), completude.
+6. Shell da aplicação: sidebar, topbar, tema escuro padrão com alternância, i18n pt-BR.
+7. Dashboard com `dashboard_counters()` e os oito cards em estado vazio guiado.
+8. Configurações: conta e aparência.
+9. CI: lint, typecheck, teste unitário, teste de RLS, build.
 
-### Critérios de aceite (todos obrigatórios)
+### Critérios de aceite (binários)
 
-- [ ] `npm run build` sem erro e sem `any` em fronteira de dados.
-- [ ] `supabase db push` em projeto **limpo** cria todo o schema sem erro, e rodar duas vezes não
-      quebra (idempotência).
-- [ ] Nenhuma tabela de `public` sem RLS (query de verificação retorna zero linhas).
-- [ ] Teste de isolamento: usuário B não lê nem altera nada de A, em todas as tabelas com
-      `user_id`.
-- [ ] Cadastro cria `profiles` + `user_settings` + `user_limits` por trigger (teste).
-- [ ] Rota de `(app)` sem sessão redireciona para `/login?next=...`.
-- [ ] Criar perfil profissional com 2 experiências, 1 formação e 1 certificação, recarregar e os
-      dados persistem.
-- [ ] Ativar o 11º perfil de busca retorna erro explicativo (RN-015).
-- [ ] `recency_hours = 48` é rejeitado na validação e no banco (RN-017).
-- [ ] Dark mode é o tema da primeira pintura, sem *flash* de claro.
-- [ ] Nenhuma string de interface fora de `lib/i18n/pt-BR.ts`.
-- [ ] Nenhum segredo em `NEXT_PUBLIC_*`.
+- [ ] `supabase db reset` aplica todas as migrations em banco limpo, sem erro, duas vezes
+      seguidas (idempotência).
+- [ ] `app_private.rls_coverage` não lista nenhuma tabela com `rls_enabled = false`.
+- [ ] Teste de travessia A→B passa para **todas** as tabelas pessoais (RNF-TST-03).
+- [ ] `application_events` e `linkedin_audit_sections` negam `UPDATE`/`DELETE` ao próprio dono.
+- [ ] Cadastro cria as 4 linhas padrão (teste).
+- [ ] Nenhuma rota de `(app)` responde sem sessão (teste varrendo as rotas).
+- [ ] `npm run db:types` gera tipos e o CI falha se o arquivo versionado estiver defasado.
+- [ ] Tema escuro é o padrão, persiste e não pisca ao carregar.
+- [ ] Toda a interface em pt-BR, sem string solta em JSX (lint).
+- [ ] Perfil profissional calcula completude e lista o que falta.
+- [ ] Dashboard distingue "sem dados ainda" de zero em 100% dos cards (RF-DSH-08).
+- [ ] CI verde: lint + typecheck + unit + rls + build.
 
 ---
 
@@ -59,46 +58,47 @@ domínio (apenas o banco e o layout).
 
 ### Escopo
 
-1. Núcleo do coletor: guard, fetch, normalize, resolveDate, filter, persist, dedupe,
-   linkRecruiter, score, closeRun.
-2. Adaptadores: `manual`, `rss-generic`, `greenhouse`, `lever` (mais `jsonld-careers` se o tempo
-   permitir), com fixtures.
-3. Fila (`collector_queue`) + planner + runner *chunked* + `vercel.json` com os crons.
-4. Opportunity Score completo com `score_breakdown` e explicação por template.
-5. Recrutadores: evidência derivada de vaga, classificador, recálculo diário, tela com evidências.
-6. Job Radar: lista, filtros, ordenação, detalhe com decomposição do score, descarte, painel de
-   execuções.
-7. Kanban: colunas, arrastar e soltar, eventos automáticos, estagnação, próxima ação.
-8. Cadastro manual de vaga.
+1. Perfis de busca com filtros independentes, limite de ativos, pesos de score.
+2. Contrato do adaptador + registry + **dois adaptadores reais** (`manual` + um de
+   `greenhouse`/`rss-generic`) com fixtures.
+3. Núcleo: guard, planner, runner (fila com `SKIP LOCKED`), nove etapas do `processLot`.
+4. `resolvePublishedAt` com proveniência e confiança; rótulos da interface.
+5. Deduplicação em três níveis; `job_duplicates`; exibição da canônica com as fontes irmãs.
+6. Normalização por dicionário (título, local, modalidade, contrato, senioridade, salário,
+   competências).
+7. Opportunity Score completo, com `score_breakdown` e explicação derivada.
+8. Recrutadores: registro, evidências, classificação, vinculação automática, rotina diária.
+9. Kanban com dez colunas, arrastar e soltar, histórico imutável, próxima ação, estagnação.
+10. Painel de execuções e saúde das fontes; coleta manual com rate limit.
+11. Crons: `collect-jobs`, `close-stale-jobs`, `recalc-scores`, `refresh-recruiters`.
 
 ### Critérios de aceite
 
-- [ ] Fonte com `legal_status` diferente de `allowed` **não** executa, mesmo com todas as flags
-      ligadas — teste prova que nenhuma requisição de rede é feita (RN-020).
-- [ ] Coleta real de pelo menos uma fonte traz vagas com `published_at_confidence='exact'`.
-- [ ] Mesma vaga coletada 2x não duplica; `last_seen_at` atualiza e `published_at`/`first_seen_at`
-      **não** mudam (teste de trigger).
-- [ ] Vaga igual em 2 fontes gera `job_duplicates`; a interface exibe uma canônica com as duas URLs.
-- [ ] Título levemente diferente (similaridade ≥ 0,82) é detectado como duplicata `fuzzy`.
-- [ ] Vaga sem data entra com `confidence='unknown'`, exibe "detectada em" e tem o componente de
-      recência **indisponível** (RN-003).
-- [ ] Palavra-chave excluída vence a incluída (RN-016).
-- [ ] Empresa vetada não aparece em nenhum módulo (RN-013).
-- [ ] `calculateOpportunityScore` passa os 10 testes do doc 08 §11, incluindo o de pureza.
-- [ ] Vaga sem recrutador e sem salário tem score **≥** vaga idêntica com recrutador inativo e
-      salário baixo (ausência ≠ zero).
-- [ ] `data_coverage < 0,5` ⇒ selo de baixa confiança e **nenhuma** notificação, mesmo com score 95.
-- [ ] Recrutador com perfil completo e zero evidência ⇒ `no_activity_found` (RN-042).
-- [ ] Classificador passa a tabela-verdade de 9 casos (doc 07 §4).
-- [ ] Cron recusa requisição sem `CRON_SECRET` e registra a recusa.
-- [ ] Toda execução gera `collector_runs`, inclusive a que falhou, com contadores por motivo de
-      filtro (RN-029).
-- [ ] Runner respeita o orçamento de tempo: fila grande deixa itens `pending` sem estourar o
-      limite da função.
-- [ ] Mover cartão no Kanban grava `application_events` por trigger; `UPDATE` no evento é negado
-      pela RLS (RN-054).
-- [ ] Cartão sem evento há 8 dias aparece como estagnado (RN-055).
-- [ ] 6ª coleta manual na mesma hora retorna 429 com tempo de espera (RN-028).
+- [ ] Fonte com `legal_status != 'allowed'` não é executada **nem com a fonte habilitada pelo
+      usuário** (teste).
+- [ ] Adicionar um terceiro adaptador exige apenas novo arquivo + linha no registry + seed —
+      comprovado fazendo isso de verdade durante a entrega, sem tocar no núcleo.
+- [ ] Cada adaptador tem teste com fixture, sem rede (RNF-TST-02).
+- [ ] Vaga sem data confiável **nunca** aparece como "publicada há X"; aparece como
+      "detectada em" e seu componente de recência fica indisponível.
+- [ ] Duas fontes com a mesma vaga ⇒ uma entrada visível + linha em `job_duplicates` com
+      `strategy` e `similarity`.
+- [ ] Recoletar o mesmo lote duas vezes não cria vaga duplicada nem atividade de recrutador
+      duplicada (idempotência).
+- [ ] `score = null` quando nenhum componente está disponível; nunca 0.
+- [ ] `data_coverage < 0,5` ⇒ selo de baixa confiança e **nenhuma notificação**, mesmo com score 95.
+- [ ] Explicação do score contém apenas o que está em `score_breakdown`.
+- [ ] Recrutador só é "Ativo recentemente" com evidência datada de confiança ≥ `approximate` nos
+      últimos 14 dias; `profile_update` nunca eleva classificação (testes).
+- [ ] Classificação muda sozinha entre D+14 e D+15 pela rotina diária.
+- [ ] Vaga de empresa vetada não aparece em radar, dashboard, estatística nem notificação.
+- [ ] Vaga descartada não reaparece no mesmo perfil de busca.
+- [ ] Falha simulada de uma fonte não impede as outras e fica registrada em `collector_runs`.
+- [ ] Mover cartão no Kanban persiste em ≤ 1 s, gera evento e reverte visualmente em erro.
+- [ ] Kanban operável só com teclado.
+- [ ] Listagem do radar com 500 vagas responde em ≤ 500 ms no servidor (p95), paginada em 25.
+- [ ] Coleta manual respeita `MANUAL_RUNS_PER_HOUR` e devolve 429 com tempo de espera.
+- [ ] Cobertura ≥ 80% nas funções puras de score, dedupe, normalização, data e classificação.
 
 ---
 
@@ -106,33 +106,37 @@ domínio (apenas o banco e o layout).
 
 ### Escopo
 
-1. Os 4 canais de entrada e a normalização para `ProfileInput`.
-2. As 14 seções de verificações determinísticas.
-3. Camada de IA com saída estruturada + validador anti-invenção.
-4. Score ponderado normalizado por cobertura; prioridades calculadas.
-5. Auditorias imutáveis, histórico, comparação entre auditorias, gráfico de evolução.
-6. Comparação original × otimizado com projeção recalculada.
-7. Marcação de recomendação aplicada; exportação da auditoria (PDF/Markdown).
+1. Quatro entradas (URL best-effort, texto, PDF, formulário) → `ProfileSnapshot`.
+2. Relatório de cobertura e matriz de avaliabilidade.
+3. Revisão humana obrigatória do snapshot.
+4. Camada determinística por seção + camada de IA com saída estruturada.
+5. Validador anti-invenção + Zod + retentativa única.
+6. Score ponderado, prioridade calculada, achados com cinco partes.
+7. Comparação original versus otimizado; cópia em um clique.
+8. Histórico, comparação entre auditorias, gráfico de evolução, rastreamento de recomendações.
+9. Upload e exclusão do PDF em bucket privado; `ai_runs` com custo.
 
 ### Critérios de aceite
 
-- [ ] Os 4 canais produzem auditoria; o canal de URL, ao falhar, oferece os outros três **sem**
-      mensagem de erro técnica (RN-061).
-- [ ] Nenhuma dependência de navegador headless no módulo (teste falha se `playwright`/`puppeteer`
-      for importado).
-- [ ] Seção não avaliável fica fora do score e **aparece listada** na interface (RN-060).
-- [ ] Toda recomendação gravada tem as 5 partes; incompleta é rejeitada pelo validador (RN-063).
-- [ ] Suíte adversarial de 20 casos: nenhum `example_text` com empresa, cargo, data, número ou
-      tecnologia ausente na entrada passa pelo validador (RN-007, RN-065).
-- [ ] Faltando informação, o texto sugerido contém `[PREENCHER: ...]` e a interface o realça.
-- [ ] `priority` reproduz `peso × severidade × lacuna` (teste numérico).
-- [ ] Auditoria `completed` é imutável: `UPDATE` negado pela RLS **e** pela trigger (RN-066).
-- [ ] Reanálise cria auditoria com `previous_audit_id` e o gráfico de evolução mostra as duas.
-- [ ] Comparação entre auditorias com bases diferentes **declara** a mudança de base.
-- [ ] PDF em bucket privado, excluído junto com a auditoria; nunca enviado como arquivo à IA
-      (RN-067).
-- [ ] Teto de custo atingido ⇒ erro explicativo com consumo e data de reinício (RN-070).
-- [ ] Repetir a mesma auditoria em 30 dias reaproveita o cache e marca "cached" (RN-071).
+- [ ] As quatro entradas produzem snapshot válido; a de URL falha graciosamente nos quatro
+      cenários testados (parcial, redirecionamento para login, 403, timeout) e oferece as outras.
+- [ ] Nenhuma tentativa de autenticação, proxy ou navegador headless no código (revisão).
+- [ ] Parsers de texto e PDF testados com ≥ 5 fixtures reais cada.
+- [ ] Seção `not_evaluable` não recebe nota, sai da normalização e aparece listada com a ação
+      para fornecê-la.
+- [ ] Análise não roda sem `reviewed_at` no snapshot (teste de rota).
+- [ ] Todo achado tem issue, impact, how_to_fix, example_text e priority; achado incompleto é
+      rejeitado antes de gravar (teste).
+- [ ] Validador anti-invenção rejeita empresa, cargo, data, número e tecnologia ausentes na
+      entrada — um teste por categoria.
+- [ ] `[PREENCHER: ...]` presente sempre que a sugestão depender de dado inexistente.
+- [ ] Prioridade confere com a fórmula do RN-064 em três casos manuais documentados.
+- [ ] Auditoria concluída é imutável; só `status` de achado muda (teste de RLS + trigger).
+- [ ] Comparação entre duas auditorias ignora seções não avaliadas em uma delas e declara isso.
+- [ ] Excluir auditoria remove o PDF do Storage (teste conferindo ausência do objeto).
+- [ ] Auditoria executa em ≤ 60 s, em background, com polling e possibilidade de sair da tela.
+- [ ] Cache por hash evita segunda cobrança para snapshot idêntico (teste).
+- [ ] Toda saída exibe modelo, versão do prompt e data.
 
 ---
 
@@ -140,37 +144,42 @@ domínio (apenas o banco e o layout).
 
 ### Escopo
 
-1. AI Career Assistant: análise de vaga × perfil, currículo direcionado, carta de apresentação,
-   simulação de entrevista com perguntas e avaliação.
-2. Recruiter CRM: cadastro manual, contatos, follow-ups, histórico, exportação.
-3. Career Intelligence: agregados de salário, competências e modalidade, com amostra declarada.
-4. Offer Comparator: cálculo com premissas versionadas, comparação com o emprego atual, critérios
-   ponderados pelo usuário.
-5. Career Growth: lacuna de competências, metas, plano de estudo, progresso.
-6. Currículos versionados com renderização em PDF.
+1. AI Career Assistant: análise de vaga, currículo adaptado, carta, mensagem, simulação de
+   entrevista, estimativa de ATS.
+2. Teto de custo, cache, modelo por tarefa, contexto por lista de permissão, painel de consumo.
+3. Recruiter CRM: empresas, interações, follow-up, linha do tempo unificada, mesclagem,
+   alerta de empresa alvo.
+4. Career Intelligence: estatísticas com `n` e período, tendências, mercado versus usuário,
+   `compute-insights` semanal.
+5. Offer Comparator: cálculo CLT/PJ com premissas versionadas, comparação, pesos do usuário,
+   contraproposta, decisão.
+6. Career Growth: competências, lacunas, planos, itens, metas, marcos.
+7. Currículos versionados com versão mestre.
+8. Configurações: IA, regras e pesos de score.
 
 ### Critérios de aceite
 
-- [ ] Toda saída de IA é validada por Zod; falha ⇒ 1 retry ⇒ erro registrado, **nada** parcial na
-      tela (RN-073).
-- [ ] Nenhuma chamada de IA parte do cliente (verificado por revisão + teste de rede).
-- [ ] `ai_runs` registra modelo, versão de prompt, tokens, custo e latência em 100% das chamadas
-      (RN-006).
-- [ ] Contexto de IA montado por lista de permissão; teste prova que remuneração atual **nunca**
-      é enviada (RN-072).
-- [ ] Currículo gerado não contém fato ausente no perfil (suíte adversarial).
-- [ ] Estatística com `n < 8` exibe "amostra insuficiente (n=X)", nunca o número (RN-004).
-- [ ] Estatística salarial ignora `salary_is_estimated = true` e informa quantas vagas excluiu
-      (RN-005).
-- [ ] Comparação de propostas exibe as premissas usadas e a ressalva de PJ × CLT (RN-080, RN-082).
-- [ ] Remuneração total anual confere com cálculo manual em 3 cenários (13º, férias, benefícios,
-      deslocamento).
-- [ ] Sem emprego atual cadastrado, o comparador funciona e **declara** a ausência da linha de
-      base (RN-084).
-- [ ] Pesos de critérios não financeiros são do usuário; o sistema não aplica peso sem confirmação
-      (RN-085).
-- [ ] Plano de estudo sugerido pela IA entra como sugestão editável, nunca aplicado
-      automaticamente (RN-075).
+- [ ] 100% das chamadas de IA registram `ai_runs` com modelo, versão de prompt, tokens, custo e
+      latência.
+- [ ] Teto de IA **bloqueia** de fato, com mensagem de consumo e data de reinício (teste).
+- [ ] Nenhuma chamada de IA ocorre sem ação explícita do usuário (revisão + teste).
+- [ ] Cache evita segunda cobrança para entrada idêntica (teste).
+- [ ] Currículo adaptado não contém nenhum fato ausente no currículo mestre (teste preparado).
+- [ ] Toda saída de IA declara quais dados do usuário foram usados como contexto.
+- [ ] Nenhuma estatística com `n < 8` é exibida; aparece "amostra insuficiente (n = X)".
+- [ ] Toda estatística declara `n`, período e origem, e é possível ver quais vagas a compõem.
+- [ ] Salário estimado nunca entra em estatística de salário informado (teste).
+- [ ] Extração de competências é determinística e testada com 20 descrições de fixture.
+- [ ] Cálculo de proposta confere com três casos manuais documentados (CLT, PJ, CLT com
+      benefícios).
+- [ ] Toda comparação grava e exibe premissas e versão da tabela de alíquotas; proposta PJ exige
+      alíquota informada.
+- [ ] Ressalva de "não é aconselhamento fiscal" visível em toda tela de cálculo.
+- [ ] Nenhuma sugestão de estudo contém curso, provedor, preço ou URL inventados (constraint +
+      teste).
+- [ ] Classificação de recrutador, follow-up vencido e alerta de empresa alvo geram notificação e
+      aparecem no dashboard.
+- [ ] Indisponibilidade da IA não quebra nenhuma tela não-IA.
 
 ---
 
@@ -178,40 +187,69 @@ domínio (apenas o banco e o layout).
 
 ### Escopo
 
-1. Biblioteca profissional: upload, tags, vencimento de certificado, busca, vínculo com
-   candidatura/certificação.
-2. Notificações: resumo diário, ações atrasadas, fonte degradada, teto de IA, prazo de proposta;
-   caixa de entrada no app; e-mail com assunto neutro.
-3. Modo busca discreta completo (título, favicon, mascaramento, ocultação rápida, quiet mode).
-4. Rotinas de retenção, exportação de dados, exclusão de conta.
-5. Testes: unitários do domínio, integração de RLS, E2E dos fluxos críticos.
-6. Revisão de segurança (checklist do doc 16 §13) e otimização de desempenho.
-7. Adaptador `email_alert` (se a avaliação de privacidade aprovar).
+1. Biblioteca profissional completa: upload, categorias, etiquetas, busca, cota,
+   pré-visualização, vínculos, validade de certificações.
+2. Notificações: tipos, canais, horário silencioso, resumo diário, leitura e limpeza.
+3. Modo discreto completo: título neutro, máscara, PIN, e-mail neutro, logs desligáveis.
+4. Exclusão de conta, exportação de dados, encerramento de sessões, OAuth opcional.
+5. Importação de perfil por PDF (RF-PRF-09) e adaptador `email-alert` (opcional).
+6. Testes e2e dos cinco fluxos críticos; revisão de desempenho; revisão de segurança;
+   backup com restauração testada.
+7. Documentação final: `README` de execução, variáveis, procedimento de migration, runbook de
+   incidentes.
 
 ### Critérios de aceite
 
-- [ ] Upload de 10 MB passa; 11 MB é rejeitado na borda; tipo verificado por *magic bytes*.
-- [ ] Documento só acessível por URL assinada de 60 s; URL de outro usuário retorna 403.
-- [ ] Certificado vencendo em 30 dias gera notificação.
-- [ ] Resumo diário sai uma vez, no fuso do usuário, com `dedupe_key` impedindo repetição.
-- [ ] Em modo discreto: título é "Painel", o assunto do e-mail é neutro, notificação imediata é
-      suprimida e valores aparecem mascarados (RN-092).
-- [ ] Exclusão de conta remove linhas **e** arquivos dos 4 buckets (teste de integração).
-- [ ] Exportação gera JSON + CSV completos e reimportáveis em planilha.
-- [ ] Rotina de retenção apaga `job_raw_payloads` > 90 dias e preserva `jobs`.
-- [ ] Cobertura de teste: ≥ 80% em `lib/scoring`, `lib/radar/core`, `lib/recruiters`,
-      `lib/linkedin/checks`, `lib/offers` (RNF-TST-01).
-- [ ] E2E passando: onboarding → coleta manual → candidatura → mover no Kanban → auditoria de
-      LinkedIn → comparar proposta.
-- [ ] Checklist de segurança do doc 16 §13 com todos os itens marcados.
-- [ ] Dashboard carrega em < 1,5 s com 10.000 `job_matches` (dados sintéticos).
-- [ ] Nenhuma consulta N+1 nas telas de lista (verificado no log de consultas).
-- [ ] Restauração de backup validada em projeto limpo.
+- [ ] Upload rejeita tipo não permitido (por magic bytes) e arquivo acima do limite, com mensagem
+      em pt-BR.
+- [ ] Usuário A não acessa arquivo de B nem com o caminho exato (teste de política de Storage).
+- [ ] URL assinada expira em 5 min (teste).
+- [ ] Excluir documento remove linha e objeto; expurgo de órfãos funciona.
+- [ ] Cota de armazenamento respeitada e exibida.
+- [ ] Com modo discreto ativo, nenhuma notificação imediata é emitida em nenhum canal (teste).
+- [ ] Assunto de e-mail não revela busca de emprego com o modo ativo.
+- [ ] Resumo diário consolida as notificações do dia em uma só mensagem.
+- [ ] PIN bloqueia a interface após o tempo configurado; armazenado apenas como hash.
+- [ ] Máscara oculta salário e empresa até ação explícita.
+- [ ] Exclusão de conta remove todas as linhas pessoais e todos os objetos do Storage (teste em
+      base de desenvolvimento, conferindo contagem zero).
+- [ ] Exportação gera JSON completo, sem `pin_hash` nem segredos.
+- [ ] Nenhum campo em todo o sistema pede senha de plataforma externa (revisão documentada).
+- [ ] Cinco fluxos e2e verdes: login, criar perfil de busca, coletar, mover cartão, auditar
+      LinkedIn.
+- [ ] `EXPLAIN ANALYZE` das 10 consultas principais sem varredura sequencial em tabela grande.
+- [ ] LCP ≤ 2,5 s nas rotas principais com base de teste (500 vagas, 50 candidaturas).
+- [ ] Bundle da rota mais pesada ≤ 300 kB gzip.
+- [ ] Restauração de backup executada e documentada.
+- [ ] `npm audit` sem vulnerabilidade crítica.
 
 ---
 
-## Fora do roadmap (Fase 6+, pós-SaaS)
+## Pontos de verificação transversais (todas as fases)
 
-Billing e planos, organizações e times, política de privacidade e DPA formais, MFA obrigatório,
-app mobile, API pública, integrações OAuth de calendário. O schema já suporta multi-tenant
-(ADR-002); o que falta é produto e conformidade, não banco.
+Avaliados ao fim de cada fase; reprovar em qualquer um reabre a fase:
+
+| # | Verificação |
+|---|---|
+| T1 | Nenhum número exibido na interface sem origem rastreável até uma tabela |
+| T2 | Nenhum dado ausente exibido como zero |
+| T3 | RLS ativa e testada em toda tabela nova |
+| T4 | Nenhuma string de interface fora de `lib/i18n/pt-BR.ts` |
+| T5 | Nenhuma regra de negócio nova fora de `lib/config/rules.ts`, `user_settings` ou `user_limits` |
+| T6 | Toda função pura nova tem teste de tabela |
+| T7 | `lib/` não importa de `features/` nem de `app/` (lint) |
+| T8 | Nenhum segredo em log, repositório ou bundle do cliente |
+| T9 | Dark e light funcionando em toda tela nova, a 1280 px e 360 px |
+| T10 | Documentação atualizada quando a implementação divergir da especificação (a divergência é bug de um dos dois lados, e precisa ser resolvida) |
+
+## Ordem de implementação dentro de cada fase (recomendada)
+
+```
+1. migration + tipos gerados        (o banco primeiro: o resto deriva dele)
+2. funções puras + testes           (score, dedupe, classificação, cálculo)
+3. queries e actions da feature     (com Zod)
+4. rota e componentes               (estados vazios desde o começo)
+5. automação (cron/rota longa)
+6. testes de RLS e e2e do fluxo
+7. revisão dos pontos transversais T1–T10
+```

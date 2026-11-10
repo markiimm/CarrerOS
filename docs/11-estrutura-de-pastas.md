@@ -41,6 +41,8 @@ app/
 │
 ├─ (app)/                     rotas protegidas (middleware exige sessão)
 │   ├─ layout.tsx             shell: sidebar + topbar + PIN lock + indicador de modo discreto
+│   ├─ bloqueio/page.tsx      tela de PIN (RF-DIS-04) — destino do middleware quando o
+│   │                         PIN está ativo e o tempo de inatividade expirou
 │   ├─ painel/page.tsx                        Dashboard
 │   ├─ radar/
 │   │   ├─ page.tsx                           lista de vagas

@@ -26,7 +26,7 @@ Nenhuma feature chama o SDK direto. Tudo passa por `lib/ai/client.ts`:
 ```ts
 export async function runAi<T>(params: {
   userId: string;
-  feature: AiFeature;              // tipado; corresponde ao CHECK de ai_runs.feature
+  feature: AiFeature;              // tipado; corresponde ao enum ai_feature
   promptVersion: string;           // ex.: 'linkedin-audit/v3'
   system: string;                  // instruções estáveis (cacheadas)
   input: AiInput;                  // conteúdo variável, já delimitado e rotulado

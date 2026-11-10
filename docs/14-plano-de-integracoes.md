@@ -112,7 +112,7 @@ plataformas que não permitem coleta. É a integração de maior retorno por esf
 
 | Exigência | Implementação |
 |---|---|
-| Timeout | 15 s por requisição (`RADAR_HTTP_TIMEOUT_MS`) |
+| Timeout | 15 s por requisição (`COLLECTOR_HTTP_TIMEOUT_MS`) |
 | Retry | 3 tentativas, backoff exponencial com jitter; `429` respeita `Retry-After` |
 | Rate limit | por fonte, global entre usuários (RN-027) |
 | Identificação | `User-Agent` próprio e verificável, com URL explicativa; **nunca** com dado pessoal do usuário |

@@ -332,7 +332,7 @@ UNIQUE (user_id, search_profile_id, job_id)                      -- RN-024
 | Tabela | Campos | Notas |
 |---|---|---|
 | `linkedin_profile_versions` | `id`, `user_id`, `input_method linkedin_input_method`, `captured_at`, `source_url`, `document_id` → `documents` on delete set null, `raw_text text`, `snapshot jsonb not null`, `coverage jsonb not null`, `reviewed_at` not null, `created_at` | `reviewed_at` obrigatório: sem revisão humana não há auditoria (documento 09 §6) |
-| `linkedin_audits` | `id`, `user_id`, `profile_version_id` cascade, `previous_audit_id` → self on delete set null, `search_profile_id` (alinhamento, RF-LKD-12), `status audit_status`, `overall_score smallint`, `evaluated_weight smallint`, `profile_coverage numeric(3,2)`, `weights jsonb`, `score_version text`, `ai_run_id` → `ai_runs`, `started_at`, `finished_at`, `error_code`, `error_message`, `created_at` | índice `(user_id, created_at DESC)` |
+| `linkedin_audits` | `id`, `user_id`, `profile_version_id` cascade, `previous_audit_id` → self on delete set null, `search_profile_id` (alinhamento, RF-LKD-12), `status audit_status`, `overall_score smallint`, `evaluated_weight smallint`, `profile_coverage numeric(3,2)`, `weights jsonb`, `score_version text`, `prompt_version text`, `ai_run_id` → `ai_runs`, `started_at`, `finished_at`, `error_code`, `error_message`, `created_at` | índice `(user_id, created_at DESC)` |
 | `linkedin_audit_sections` | `id`, `audit_id` cascade, `user_id`, `section_key text`, `status section_status`, `weight smallint`, `score_0_10 smallint`, `weighted_points numeric(5,2)`, `deterministic_score smallint`, `ai_score smallint`, `rationale text`, `original_text text`, `optimized_text text` | `UNIQUE (audit_id, section_key)`; imutável após `completed` (RLS sem `UPDATE`) |
 | `linkedin_audit_findings` | `id`, `audit_id` cascade, `user_id`, `section_key`, `issue`, `impact`, `how_to_fix`, `example_text`, `severity finding_severity`, `priority smallint`, `has_placeholder bool`, `used_facts jsonb`, `status finding_status` default `pending`, `status_changed_at`, `created_at` | as cinco partes são `NOT NULL` (RN-063) — a regra fica no schema, não só no código. Único campo mutável: `status`/`status_changed_at` (coluna-nível, por política de RLS com `WITH CHECK` restritivo) |
 
@@ -459,7 +459,7 @@ atual é a versão aberta, porque o conteúdo é público e a alternativa prejud
 |---|---|---|
 | `job_raw_payloads` | 90 dias | `retention` (semanal) |
 | `audit_logs` | `user_settings.data_retention_days` (padrão 180) | `retention` |
-| `ai_runs` | 365 dias (o custo agregado por mês é preservado em `ai_cost_monthly`) | `retention` |
+| `ai_runs` | 365 dias — além do teto mensal (que usa o ciclo corrente), o histórico de custo exibido em Configurações cobre 12 meses; não há tabela de agregado, porque 12 meses de `ai_runs` de um usuário são poucos milhares de linhas | `retention` |
 | `collector_runs` | 180 dias | `retention` |
 | `recruiter_activities` | mantidas; expurgo só por exclusão do recrutador | — |
 | `jobs`, `job_matches`, `applications` | **sem expurgo** — são o histórico profissional do usuário | — |

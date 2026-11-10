@@ -1,0 +1,16 @@
+# Claude Code worktrees (checkouts separados, nunca versionar)
+.claude/
+
+# Ambiente
+.env
+.env.local
+.env*.local
+
+# Node / Next
+node_modules/
+.next/
+out/
+
+# SO / editor
+.DS_Store
+Thumbs.db
