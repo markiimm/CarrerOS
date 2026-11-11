@@ -1,9 +1,33 @@
 # CareerOS — Personal Career Intelligence Platform
 
-> **Status deste repositório:** especificação técnica e funcional (Etapa 1 — Planejamento).
-> **Nenhum código de aplicação foi escrito.** Este repositório contém a documentação que permite
-> a outra IA (ou outro desenvolvedor) implementar o CareerOS sem tomar decisões de arquitetura
-> por conta própria.
+> **Status deste repositório:** Fase 1 (Fundação) implementada — autenticação, shell, painel,
+> perfil profissional e configurações de conta e aparência. As Fases 2–5 seguem o roadmap do
+> [documento 17](docs/17-roadmap-e-criterios-de-aceite.md). A especificação em `docs/` continua
+> sendo a referência normativa.
+
+## Como executar
+
+```bash
+npm install
+cp .env.example .env.local   # preencha NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY
+npm run dev                  # http://localhost:3000
+```
+
+O banco precisa das migrations `supabase/migrations/0001`–`0019` aplicadas, na ordem
+(`npm run db:push` com o Supabase CLI vinculado ao projeto, ou pelo SQL Editor). No painel do
+Supabase, em *Authentication → URL Configuration*, inclua `http://localhost:3000/auth/confirm`
+(e o domínio de produção) nas URLs de redirecionamento.
+
+| Comando | O que verifica |
+|---|---|
+| `npm run lint` | estilo, dependência entre camadas e string solta em JSX |
+| `npm run typecheck` | tipos (TypeScript strict) |
+| `npm run test:unit` | funções puras: completude, validação, normalização |
+| `npm run test:rls` | isolamento entre usuários — exige banco de **teste** e `SUPABASE_SERVICE_ROLE_KEY` |
+| `npm run build` | build de produção |
+
+Depois de aplicar as migrations, rode `npm run db:types` para substituir o
+`lib/db/database.types.ts` provisório pelos tipos gerados do banco.
 
 O CareerOS é uma plataforma pessoal de inteligência de carreira para alguém **que já está
 empregado e busca uma oportunidade melhor**, operando de forma discreta e automatizada.
