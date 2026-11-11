@@ -17,6 +17,8 @@ const csp = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Importação de currículo em PDF (até 4 MB) chega por Server Action; o padrão do Next é 1 MB.
+  experimental: { serverActions: { bodySizeLimit: '5mb' } },
   async headers() {
     return [
       {

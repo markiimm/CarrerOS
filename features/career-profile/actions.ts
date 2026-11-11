@@ -8,13 +8,12 @@ import { issuesToErrors } from '@/lib/utils/form';
 import { logger } from '@/lib/utils/logger';
 import { fail, ok, type ActionResult } from '@/lib/utils/result';
 import { normalizeText } from '@/lib/utils/text';
-import { getCareerProfiles } from './queries';
 import {
   BENEFIT_KEYS, careerProfileSchema, certificationSchema, currentEmploymentSchema, educationSchema,
   experienceSchema, idSchema, linkSchema, personalDataSchema, userSkillSchema,
 } from './schemas';
+import { syncCompleteness, type DbError } from './sync';
 
-type DbError = { message: string; code?: string } | null;
 interface Ctx<T> {
   supabase: ServerClient;
   userId: string;
@@ -52,17 +51,6 @@ async function mutate<S extends z.ZodType>(
     logger.error('career_profile.action_failed', { where, requestId, detail: error instanceof Error ? error.message : 'unknown' });
     return fail('INTERNAL', t.errors.internal(requestId));
   }
-}
-
-/** Persiste career_profiles.completeness, lido pelo Opportunity Score (documento 08). */
-async function syncCompleteness(supabase: ServerClient, userId: string): Promise<DbError> {
-  for (const profile of await getCareerProfiles(supabase, userId)) {
-    if (profile.completeness === profile.computed.score) continue;
-    const { error } = await supabase.from('career_profiles')
-      .update({ completeness: profile.computed.score }).eq('id', profile.id).eq('user_id', userId);
-    if (error) return error;
-  }
-  return null;
 }
 
 export async function savePersonalData(input: unknown) {

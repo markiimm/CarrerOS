@@ -61,6 +61,14 @@ describe.skipIf(!enabled)('RLS — Fase 1', () => {
     expect(update.data ?? []).toEqual([]);
   });
 
+  it('user_limits: o usuário não consegue se promover a premium (migration 0020)', async () => {
+    const [a] = users;
+    const update = await a!.client.from('user_limits').update({ plan: 'premium' }).eq('user_id', a!.id).select('plan');
+    expect(update.data ?? [], 'o UPDATE não altera nenhuma linha').toEqual([]);
+    const read = await a!.client.from('user_limits').select('plan').eq('user_id', a!.id).single();
+    expect(read.data?.plan).toBe('personal');
+  });
+
   it.each(Object.keys(PERSONAL_TABLES))('%s: B não lê, não altera, não apaga e não grava em nome de A', async (table) => {
     const [a, b] = users;
     const row = { ...PERSONAL_TABLES[table], user_id: a!.id };
