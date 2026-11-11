@@ -1,12 +1,25 @@
 import type { Metadata } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
 import { t } from '@/lib/i18n/pt-BR';
 import './globals.css';
 
-const sans = Inter({ subsets: ['latin'], display: 'swap', weight: ['400', '500', '600'], variable: '--font-sans' });
-const mono = JetBrains_Mono({ subsets: ['latin'], display: 'swap', weight: ['400', '500'], variable: '--font-mono' });
+// Fontes hospedadas localmente (pacotes @fontsource): o build não depende do Google Fonts.
+const sans = localFont({
+  src: '../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2',
+  weight: '100 900',
+  display: 'swap',
+  variable: '--font-sans',
+});
+const mono = localFont({
+  src: [
+    { path: '../node_modules/@fontsource/jetbrains-mono/files/jetbrains-mono-latin-400-normal.woff2', weight: '400', style: 'normal' },
+    { path: '../node_modules/@fontsource/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff2', weight: '500', style: 'normal' },
+  ],
+  display: 'swap',
+  variable: '--font-mono',
+});
 
 export const metadata: Metadata = {
   title: { default: t.app.name, template: `%s · ${t.app.name}` },
